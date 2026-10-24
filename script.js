@@ -1,4 +1,4 @@
-const products=window.BESTI_PRODUCTS||[];
+let products=window.BESTI_PRODUCTS||[];
 const grid=document.querySelector('#product-grid');
 const count=document.querySelector('#result-count');
 const cartCount=document.querySelector('.cart-count');
@@ -31,7 +31,7 @@ const categoryGroups=document.querySelector('#category-groups');
 const categoryClose=document.querySelector('.category-close');
 const categoryNames={outerwear:'Верхняя одежда',tops:'Кофты',bottoms:'Штаны',sets:'Костюмы',jackets:'Пиджаки'};
 const categoryOrder=['outerwear','tops','bottoms','sets','jackets'];
-const latestSkus=new Set([...products].sort((a,b)=>skuNumber(b.sku)-skuNumber(a.sku)).slice(0,12).map(item=>item.sku));
+let latestSkus=new Set([...products].sort((a,b)=>skuNumber(b.sku)-skuNumber(a.sku)).slice(0,12).map(item=>item.sku));
 let activeFilter='all';
 let selectedGroup='';
 let visibleLimit=16;
@@ -48,6 +48,14 @@ function price(value){return Number.isFinite(value)?new Intl.NumberFormat('ru-RU
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function cartKey(sku,size){return `${sku}::${size}`}
 function productInCart(sku){return [...cartItems.values()].some(entry=>entry.product.sku===sku)}
+function imagesFor(item){return Array.isArray(item.images)&&item.images.length?item.images.filter(Boolean):item.image?[item.image]:[]}
+function galleryMarkup(item,{detail=false,tag='',favorite=false}={}){
+  const images=imagesFor(item),image=images[0]||'';
+  const visualClass=detail?'product-visual detail-visual':'product-visual';
+  const dots=images.length>1?`<div class="gallery-dots" aria-label="Слайды">${images.map((_,index)=>`<button class="${index===0?'is-active':''}" type="button" aria-label="Слайд ${index+1}"></button>`).join('')}</div>`:'';
+  const arrows=images.length>1?'<button class="gallery-arrow gallery-prev" type="button" aria-label="Предыдущее фото">‹</button><button class="gallery-arrow gallery-next" type="button" aria-label="Следующее фото">›</button>':'';
+  return `<div class="${visualClass} tone-${escapeHTML(item.tone)}${image?' has-photo':''}" data-slide="0" data-images="${escapeHTML(JSON.stringify(images))}">${image?`<img class="product-photo${detail?' detail-photo':''}" src="${escapeHTML(image)}" alt="${escapeHTML(item.name)}" ${detail?'':'loading="lazy"'}>`:`<span class="garment ${escapeHTML(item.shape||'coat')}"></span>`}${tag?`<span class="product-tag">${escapeHTML(tag)}</span>`:''}${favorite?'<button class="favorite" type="button" aria-label="Добавить в избранное">♡</button>':''}${arrows}${dots}</div>`;
+}
 function displayName(value){
   const colors=/(?:светло[- ]?сер(?:ый|ая|ое|ые)|тёмно[- ]?(?:сер(?:ый|ая|ое|ые)|син(?:ий|яя|ее|ие))|темно[- ]?(?:сер(?:ый|ая|ое|ые)|син(?:ий|яя|ее|ие))|сер(?:ый|ая|ое|ые)|чёрн(?:ый|ая|ое|ые)|черн(?:ый|ая|ое|ые)|бел(?:ый|ая|ое|ые)|син(?:ий|яя|ее|ие)|голуб(?:ой|ая|ое|ые)|коричнев(?:ый|ая|ое|ые)|бежев(?:ый|ая|ое|ые)|красн(?:ый|ая|ое|ые)|зелён(?:ый|ая|ое|ые)|зелен(?:ый|ая|ое|ые)|бордов(?:ый|ая|ое|ые)|фиолетов(?:ый|ая|ое|ые)|молочн(?:ый|ая|ое|ые)|рыж(?:ий|ая|ее|ие)|лаймов(?:ый|ая|ое|ые)|салатов(?:ый|ая|ое|ые)|оливков(?:ый|ая|ое|ые))/gi;
   return String(value||'').split(/[:,]/,1)[0].replace(/\s+в\s+цветоч(?:ек|ном|ков)(?:\s+принт(?:ом)?)?/gi,'').replace(colors,'').replace(/\s+/g,' ').replace(/\s+([,.:;])/g,'$1').trim();
@@ -98,7 +106,7 @@ async function finishCheckout(){
   cartItems.clear();
   checkoutError='';
   checkoutMessage=`Заказ <strong>${escapeHTML(order.order_number)}</strong> оформлен. Спасибо! С вами свяжется менеджер в Telegram с аккаунта <a href="https://t.me/bestimood" target="_blank" rel="noopener">@Bestimood1</a> и примет у вас оплату.`;
-  render();renderCart();await renderAccountOrders();
+  await refreshCatalog();renderCart();await renderAccountOrders();
   return true;
 }
 async function beginCheckout(){
@@ -117,7 +125,7 @@ function closeCategoryPanel(){categoryPanel.hidden=true;categoryTrigger.setAttri
 function buildCategoryMenu(){
   const groups=[...new Set(products.map(item=>item.group))].sort((a,b)=>categoryOrder.indexOf(a)-categoryOrder.indexOf(b));
   categoryGroups.innerHTML=groups.map(group=>`<button class="category-option" type="button" data-group="${escapeHTML(group)}">${escapeHTML(categoryNames[group]||group)}</button>`).join('');
-  categoryGroups.insertAdjacentHTML('afterend','<div class="subcategory-list" id="subcategory-list"></div>');
+  if(!document.querySelector('#subcategory-list'))categoryGroups.insertAdjacentHTML('afterend','<div class="subcategory-list" id="subcategory-list"></div>');
 }
 function filteredProducts(){
   let list=products.filter(item=>{
@@ -139,10 +147,11 @@ function render(){
   count.textContent=`${list.length} ${list.length===1?'модель':list.length>1&&list.length<5?'модели':'моделей'}`;
   grid.innerHTML=shown.length?shown.map((item,index)=>{
     const tag=item.tag||(item.hit?'ХИТ':'');
+    const available=item.sizeMode==='one'?Number(item.oneSizeStock||0)>0:Object.values(item.sizeStock||{}).some(value=>Number(value)>0);
     return `<article class="product-card" data-sku="${escapeHTML(item.sku)}" tabindex="0" role="button" aria-label="Подробнее: ${escapeHTML(item.name)}" style="animation-delay:${Math.min(index,8)*25}ms">
-      <div class="product-visual tone-${item.tone}${item.image?' has-photo':''}" data-slide="0">${item.image?`<img class="product-photo" src="${escapeHTML(item.image)}" alt="${escapeHTML(item.name)}" loading="lazy">`:`<span class="garment ${item.shape}"></span>`}${tag?`<span class="product-tag">${tag}</span>`:''}<button class="favorite" type="button" aria-label="Добавить в избранное">♡</button>${item.image?'':`<button class="gallery-arrow gallery-prev" type="button" aria-label="Предыдущее фото">‹</button><button class="gallery-arrow gallery-next" type="button" aria-label="Следующее фото">›</button><div class="gallery-dots" aria-label="Слайды"><button class="is-active" type="button" aria-label="Слайд 1"></button><button type="button" aria-label="Слайд 2"></button><button type="button" aria-label="Слайд 3"></button></div>`}</div>
+      ${galleryMarkup(item,{tag,favorite:true})}
       <div class="product-info"><h3>${escapeHTML(displayName(item.name))}</h3><strong>${price(item.price)}</strong></div>
-      <button class="add-button${productInCart(item.sku)?' is-in-cart':''}" type="button">${productInCart(item.sku)?'В корзине ✓':'Добавить в корзину'}</button>
+      <button class="add-button${productInCart(item.sku)?' is-in-cart':''}" type="button" ${available?'':'disabled'}>${productInCart(item.sku)?'В корзине ✓':available?'Добавить в корзину':'Нет в наличии'}</button>
     </article>`;
   }).join(''):'<div class="empty-state">В этой категории пока нет товаров</div>';
   const loadMore=document.querySelector('.load-more');
@@ -158,8 +167,11 @@ function setFilter(value){
   render();
 }
 function setGallerySlide(visual,index){
-  const slide=(index+3)%3;
+  let images=[];try{images=JSON.parse(visual.dataset.images||'[]')}catch{}
+  const slide=(index+(images.length||3))%(images.length||3);
   visual.dataset.slide=String(slide);
+  const image=visual.querySelector('.product-photo');
+  if(image&&images[slide])image.src=images[slide];
   visual.querySelectorAll('.gallery-dots button').forEach((dot,i)=>dot.classList.toggle('is-active',i===slide));
 }
 function openProductModal(product){
@@ -169,7 +181,7 @@ function openProductModal(product){
   const sizes=product.sizeMode==='sized'?['XS','S','M','L','XL']:product.sizeMode==='one'?['Единый']:[];
   const sizeStock=size=>product.sizeMode==='one'?Number(product.oneSizeStock||0):Number(product.sizeStock?.[size]||0);
   const sizePicker=sizes.length?`<div class="size-picker"><p>Размер</p><div class="size-options">${sizes.map(size=>{const available=sizeStock(size)>0;return `<button class="size-option${available?'':' is-unavailable'}" type="button" data-product-size="${size}" aria-pressed="false" ${available?'':'disabled'}>${size}</button>`}).join('')}</div><span class="size-hint">Выберите размер</span></div>`:'<p class="size-hint size-missing">Размеры не указаны</p>';
-  productModalContent.innerHTML=`<div class="product-modal-gallery"><div class="product-visual detail-visual tone-${escapeHTML(product.tone)}${product.image?' has-photo':''}" data-slide="0">${product.image?`<img class="product-photo detail-photo" src="${escapeHTML(product.image)}" alt="${escapeHTML(product.name)}">`:`<span class="garment ${escapeHTML(product.shape)}"></span><button class="gallery-arrow gallery-prev" type="button" aria-label="Предыдущее фото">‹</button><button class="gallery-arrow gallery-next" type="button" aria-label="Следующее фото">›</button><div class="gallery-dots" aria-label="Слайды"><button class="is-active" type="button" aria-label="Слайд 1"></button><button type="button" aria-label="Слайд 2"></button><button type="button" aria-label="Слайд 3"></button></div>`}</div></div><div class="product-modal-info"><p class="eyebrow">${escapeHTML(categoryNames[product.group]||product.group||'Коллекция BESTI')}</p><h2>${escapeHTML(product.name)}</h2><strong class="product-modal-price">${price(product.price)}</strong>${sizePicker}<dl class="product-details">${product.subcategory?`<div><dt>Категория</dt><dd>${escapeHTML(product.subcategory)}</dd></div>`:''}<div><dt>Состав</dt><dd>${escapeHTML(product.fabric||'')}</dd></div>${stock?`<div><dt>Наличие</dt><dd>${escapeHTML(stock)}</dd></div>`:''}<div><dt>Артикул</dt><dd>${escapeHTML(product.sku)}</dd></div></dl><button class="add-button product-modal-add" type="button" disabled>Выберите размер</button></div>`;
+  productModalContent.innerHTML=`<div class="product-modal-gallery">${galleryMarkup(product,{detail:true})}</div><div class="product-modal-info"><p class="eyebrow">${escapeHTML(categoryNames[product.group]||product.group||'Коллекция BESTI')}</p><h2>${escapeHTML(product.name)}</h2><strong class="product-modal-price">${price(product.price)}</strong>${sizePicker}<dl class="product-details">${product.subcategory?`<div><dt>Категория</dt><dd>${escapeHTML(product.subcategory)}</dd></div>`:''}<div><dt>Состав</dt><dd>${escapeHTML(product.fabric||'')}</dd></div>${product.description?`<div><dt>Описание</dt><dd>${escapeHTML(product.description)}</dd></div>`:''}${stock?`<div><dt>Наличие</dt><dd>${escapeHTML(stock)}</dd></div>`:''}<div><dt>Артикул</dt><dd>${escapeHTML(product.sku)}</dd></div></dl><button class="add-button product-modal-add" type="button" disabled>Выберите размер</button></div>`;
   productModal.hidden=false;productModalOverlay.hidden=false;productModal.setAttribute('aria-hidden','false');document.body.classList.add('product-modal-open');
 }
 function closeProductModal(){productModal.hidden=true;productModalOverlay.hidden=true;productModal.setAttribute('aria-hidden','true');document.body.classList.remove('product-modal-open');modalProduct=null}
@@ -250,7 +262,6 @@ function selectGroup(group,applyFilter=true){
   list.innerHTML=names.map(name=>`<button type="button" data-subcategory="${escapeHTML(name)}">${escapeHTML(name)}</button>`).join('');
 }
 
-buildCategoryMenu();
 categoryTrigger.addEventListener('click',()=>{
   const opening=categoryPanel.hidden;
   categoryPanel.hidden=!opening;
@@ -460,5 +471,11 @@ document.querySelector('.hero-prev').addEventListener('click',()=>showSlide(curr
 document.querySelector('.hero-next').addEventListener('click',()=>showSlide(currentSlide+1));
 dots.forEach((dot,i)=>dot.addEventListener('click',()=>showSlide(i)));
 document.querySelector('.load-more').addEventListener('click',()=>{visibleLimit+=16;render()});
-render();
+async function refreshCatalog(){
+  try{products=await BestiCloud.getProducts()}catch(error){console.warn('Не удалось загрузить каталог из Supabase; показывается локальная копия.',error)}
+  latestSkus=new Set([...products].sort((a,b)=>skuNumber(b.sku)-skuNumber(a.sku)).slice(0,12).map(item=>item.sku));
+  buildCategoryMenu();render();
+}
+buildCategoryMenu();render();
+refreshCatalog();
 renderCart();

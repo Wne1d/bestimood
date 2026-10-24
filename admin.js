@@ -5,12 +5,25 @@ const rowsNode=document.querySelector('#admin-order-rows');
 const emptyNode=document.querySelector('#admin-empty');
 const searchNode=document.querySelector('#admin-search');
 let allOrders=[];
+const productsView=document.querySelector('#products-view');
+const ordersView=document.querySelector('#orders-view');
+const productRows=document.querySelector('#product-rows');
+const productEmpty=document.querySelector('#product-empty');
+const productSearch=document.querySelector('#product-search');
+const productForm=document.querySelector('#product-form');
+let allProducts=[];
+let editingSku='';
 
 function esc(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function formatMoney(value){return Number(value||0).toLocaleString('ru-RU')+' ₽'}
 function displayDate(value){const date=new Date(value);return Number.isNaN(date.getTime())?'—':new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(date)}
 function authorized(){return BestiCloud.currentUser()?.app_metadata?.role==='admin'}
 function showOrders(){authPanel.hidden=true;ordersPanel.hidden=false;loadOrders()}
+function showAdminTab(tab){
+  document.querySelectorAll('[data-admin-tab]').forEach(button=>button.classList.toggle('is-active',button.dataset.adminTab===tab));
+  ordersView.hidden=tab!=='orders';productsView.hidden=tab!=='products';
+  if(tab==='products')loadProducts();
+}
 async function loadOrders(){
   const message=document.querySelector('#admin-list-error');message.textContent='Загружаем заказы…';
   try{allOrders=await BestiCloud.getOrders();message.textContent='';renderOrders()}
@@ -31,6 +44,81 @@ function renderOrders(){
   }).join('');
   emptyNode.hidden=orders.length>0;
 }
+function productStock(product){return product.size_mode==='one'?`Единый: ${Number(product.one_size_stock||0)}`:['XS','S','M','L','XL'].map(size=>`${size}: ${Number(product.size_stock?.[size]||0)}`).join(' · ')}
+function renderProducts(){
+  const query=productSearch.value.trim().toLowerCase();
+  const filtered=allProducts.filter(product=>!query||`${product.sku} ${product.name}`.toLowerCase().includes(query));
+  productRows.innerHTML=filtered.map(product=>{
+    const image=product.image||product.images?.[0]||'';
+    return `<tr class="product-row"><td>${image?`<img class="product-thumb" src="${esc(image)}" alt="">`:'—'}</td><td><strong>${esc(product.sku)}</strong><br>${esc(product.name)}</td><td>${product.price==null?'—':formatMoney(product.price)}</td><td>${esc(productStock(product))}</td><td>${product.is_active?'В каталоге':'Скрыт'}</td><td><button type="button" data-product-edit="${esc(product.sku)}">Изменить</button>${product.is_active?` <button class="archive-product" type="button" data-product-hide="${esc(product.sku)}">Скрыть</button>`:''}</td></tr>`;
+  }).join('');
+  productEmpty.hidden=filtered.length>0;
+}
+async function loadProducts(){
+  const message=document.querySelector('#product-list-error');message.textContent='Загружаем товары…';
+  try{allProducts=await BestiCloud.getProducts({includeInactive:true});message.textContent='';renderProducts()}
+  catch(error){message.textContent=`Не удалось загрузить каталог. Проверьте, что supabase/admin-products.sql выполнен: ${error.message}`;allProducts=[];renderProducts()}
+}
+function setSizeMode(mode){
+  const sized=mode==='sized';document.querySelector('#sized-stock-fields').hidden=!sized;document.querySelector('#one-size-field').hidden=sized;
+}
+function openProductForm(product=null){
+  productForm.reset();editingSku=product?.sku||'';
+  document.querySelector('#product-form-message').textContent='';
+  productForm.hidden=false;
+  if(product){
+    for(const name of ['sku','name','price','subcategory','fabric','description','tag','group','shape'])if(productForm.elements.namedItem(name))productForm.elements.namedItem(name).value=product[name]??'';
+    productForm.elements.sku.readOnly=true;
+    productForm.elements.sizeMode.value=product.size_mode||'sized';
+    productForm.elements.oneSizeStock.value=Number(product.one_size_stock||0);
+    for(const size of ['XS','S','M','L','XL'])productForm.elements[`stock${size}`].value=Number(product.size_stock?.[size]||0);
+    productForm.elements.images.value=(product.images?.length?product.images:[product.image].filter(Boolean)).join('\n');
+    for(const name of ['hit','newItem','sale'])productForm.elements[name].checked=Boolean(product[name]);
+    productForm.elements.isActive.checked=product.is_active!==false;
+  }else{
+    productForm.elements.sku.readOnly=false;
+    productForm.elements.sku.value=`NEW-${Date.now()}`;
+    productForm.elements.group.value='outerwear';productForm.elements.shape.value='coat';
+  }
+  setSizeMode(productForm.elements.sizeMode.value);
+  productForm.scrollIntoView({behavior:'smooth',block:'start'});
+}
+productForm.elements.sizeMode.addEventListener('change',event=>setSizeMode(event.target.value));
+document.querySelector('#product-add').addEventListener('click',()=>openProductForm());
+document.querySelector('#product-cancel').addEventListener('click',()=>{productForm.hidden=true;editingSku=''});
+document.querySelector('#product-refresh').addEventListener('click',loadProducts);
+productSearch.addEventListener('input',renderProducts);
+document.querySelector('.admin-tabs').addEventListener('click',event=>{const tab=event.target.closest('[data-admin-tab]');if(tab)showAdminTab(tab.dataset.adminTab)});
+productRows.addEventListener('click',async event=>{
+  const edit=event.target.closest('[data-product-edit]');
+  if(edit){const product=allProducts.find(item=>item.sku===edit.dataset.productEdit);if(product)openProductForm(product);return}
+  const hide=event.target.closest('[data-product-hide]');
+  if(hide){hide.disabled=true;try{await BestiCloud.archiveProduct(hide.dataset.productHide);await loadProducts()}catch(error){document.querySelector('#product-list-error').textContent=error.message;hide.disabled=false}}
+});
+productForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const message=document.querySelector('#product-form-message');const button=productForm.querySelector('[type="submit"]');button.disabled=true;message.style.color='';message.textContent='Сохраняем…';
+  try{
+    const form=productForm.elements;
+    const mode=form.sizeMode.value;
+    const product={
+      sku:form.sku.value.trim().toUpperCase(),name:form.name.value.trim(),price:form.price.value,
+      group:form.group.value,subcategory:form.subcategory.value.trim(),sizeMode:mode,
+      sizeStock:Object.fromEntries(['XS','S','M','L','XL'].map(size=>[size,Math.max(0,Number(form[`stock${size}`].value)||0)])),
+      oneSizeStock:Math.max(0,Number(form.oneSizeStock.value)||0),fabric:form.fabric.value.trim(),
+      description:form.description.value.trim(),shape:form.shape.value,tag:form.tag.value.trim(),
+      hit:form.hit.checked,newItem:form.newItem.checked,sale:form.sale.checked,isActive:form.isActive.checked,
+      images:form.images.value.split(/\r?\n/).map(value=>value.trim()).filter(Boolean)
+    };
+    const files=[...form.photos.files];
+    if(files.length)product.images=[...await BestiCloud.uploadProductImages(files,product.sku),...product.images];
+    await BestiCloud.saveProduct(product);
+    message.style.color='#55745f';message.textContent='Товар сохранён.';
+    await loadProducts();
+    window.setTimeout(()=>{productForm.hidden=true;editingSku=''},400);
+  }catch(error){message.style.color='#9b4d58';message.textContent=error.message||'Не удалось сохранить товар.'}
+  finally{button.disabled=false}
+});
 function csvCell(value){
   let text=String(value??'');
   if(/^[\s]*[=+\-@]/.test(text))text="'"+text;

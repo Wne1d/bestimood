@@ -131,6 +131,88 @@ window.BestiCloud = (() => {
   async function getOrders() {
     return request('/rest/v1/orders?select=*&order=created_at.desc&limit=1000');
   }
+  async function getProducts({includeInactive = false} = {}) {
+    const activeFilter = includeInactive ? '' : '&is_active=eq.true';
+    const rows = await request(`/rest/v1/catalog_products?select=*&order=sku&limit=1000${activeFilter}`, {auth: includeInactive});
+    const legacy = new Map((window.BESTI_PRODUCTS || []).map(product => [product.sku, product]));
+    return rows.map(row => {
+      const old = legacy.get(row.sku) || {};
+      const images = Array.isArray(row.images) && row.images.length ? row.images : (old.images || [row.image || old.image].filter(Boolean));
+      return {
+        ...old, ...row,
+        name: row.name || old.name,
+        price: row.price === undefined ? old.price : row.price,
+        group: row.category_group || old.group || 'outerwear',
+        subcategory: row.subcategory ?? old.subcategory ?? '',
+        fabric: row.fabric ?? old.fabric ?? '',
+        description: row.description ?? old.description ?? '',
+        hit: row.hit ?? old.hit ?? false,
+        newItem: row.new_item ?? old.newItem ?? false,
+        sale: row.sale ?? old.sale ?? false,
+        tag: row.tag ?? old.tag ?? '',
+        tone: row.tone ?? old.tone ?? 1,
+        shape: row.shape ?? old.shape ?? 'coat',
+        sizeMode: row.size_mode,
+        sizeStock: row.size_stock || {},
+        oneSizeStock: Number(row.one_size_stock || 0),
+        stock: row.size_mode === 'one' ? Number(row.one_size_stock || 0) : Object.values(row.size_stock || {}).reduce((sum, value) => sum + Number(value || 0), 0),
+        images,
+        image: row.image || images[0] || old.image || ''
+      };
+    });
+  }
+  async function saveProduct(product) {
+    const row = {
+      sku: String(product.sku || '').trim().toUpperCase(),
+      name: String(product.name || '').trim(),
+      price: product.price === '' || product.price == null ? null : Number(product.price),
+      size_mode: product.sizeMode,
+      size_stock: product.sizeMode === 'one' ? {} : product.sizeStock,
+      one_size_stock: product.sizeMode === 'one' ? Number(product.oneSizeStock || 0) : 0,
+      category_group: product.group,
+      subcategory: product.subcategory || '',
+      fabric: product.fabric || '',
+      description: product.description || '',
+      tag: product.tag || '',
+      hit: Boolean(product.hit),
+      new_item: Boolean(product.newItem),
+      sale: Boolean(product.sale),
+      tone: Number(product.tone || 1),
+      shape: product.shape || 'coat',
+      image: product.images?.[0] || product.image || '',
+      images: product.images || [],
+      is_active: product.isActive !== false
+    };
+    const rows = await request('/rest/v1/catalog_products?on_conflict=sku', {
+      method: 'POST', body: row,
+      headers: {Prefer: 'resolution=merge-duplicates,return=representation'}
+    });
+    return rows?.[0] || row;
+  }
+  async function uploadProductImages(files, sku) {
+    const urls = [];
+    for (const file of files) {
+      if (!['image/jpeg','image/png','image/webp'].includes(file.type)) throw new Error('Для фото подходят JPG, PNG или WEBP.');
+      if (file.size > 12 * 1024 * 1024) throw new Error('Размер одного фото не должен превышать 12 МБ.');
+      const token = await accessToken();
+      const extension = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1];
+      const path = `products/${encodeURIComponent(sku)}/${crypto.randomUUID()}.${extension}`;
+      const response = await fetch(`${url}/storage/v1/object/product-images/${path}`, {
+        method: 'POST',
+        headers: {apikey: publishableKey, Authorization: `Bearer ${token}`, 'Content-Type': file.type, 'x-upsert': 'false'},
+        body: file
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || result.error || 'Не удалось загрузить фотографию. Проверьте настройки Storage.');
+      urls.push(`${url}/storage/v1/object/public/product-images/${path}`);
+    }
+    return urls;
+  }
+  async function archiveProduct(sku) {
+    return request(`/rest/v1/catalog_products?sku=eq.${encodeURIComponent(sku)}`, {
+      method: 'PATCH', body: {is_active: false}, headers: {Prefer: 'return=representation'}
+    });
+  }
   async function signOut() {
     try { if (session?.access_token) await request('/auth/v1/logout', {method: 'POST', body: {}}); }
     finally { saveSession(null); }
@@ -138,5 +220,5 @@ window.BestiCloud = (() => {
   function currentUser() { return session?.user || null; }
   function isSignedIn() { return Boolean(session?.access_token && session?.user?.id); }
 
-  return {sendCode, verifyCode, signUp, signIn, getProfile, saveProfile, createOrder, getOrders, signOut, currentUser, isSignedIn};
+  return {sendCode, verifyCode, signUp, signIn, getProfile, saveProfile, createOrder, getOrders, getProducts, saveProduct, uploadProductImages, archiveProduct, signOut, currentUser, isSignedIn};
 })();
