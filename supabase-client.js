@@ -105,10 +105,23 @@ window.BestiCloud = (() => {
       body.personal_data_consent = true;
       body.personal_data_consent_at = profile.personalDataConsentAt || profile.personal_data_consent_at || new Date().toISOString();
     }
-    const rows = await request('/rest/v1/profiles?on_conflict=id', {
-      method: 'POST', body,
-      headers: {Prefer: 'resolution=merge-duplicates,return=representation'}
-    });
+    const existing = await getProfile();
+    let rows;
+    if (existing) {
+      // PATCH avoids invoking the INSERT RLS policy during an upsert of an existing profile.
+      rows = await request(`/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}`, {
+        method: 'PATCH', body,
+        headers: {Prefer: 'return=representation'}
+      });
+    } else {
+      if (body.personal_data_consent !== true) {
+        throw new Error('Для создания профиля нужно согласие на обработку персональных данных.');
+      }
+      rows = await request('/rest/v1/profiles', {
+        method: 'POST', body,
+        headers: {Prefer: 'return=representation'}
+      });
+    }
     return rows?.[0] || await getProfile();
   }
   async function createOrder(items) {
