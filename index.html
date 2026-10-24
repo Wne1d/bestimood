@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f2ec">
+  <title>BESTI MOOD — каталог одежды</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-top">
+      <div class="socials"><a href="https://t.me/bestimood" aria-label="Telegram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 4.5 18.3 19c-.2 1-1 1.2-1.8.7l-5-3.7-2.4 2.3c-.3.3-.6.6-1.1.6l.4-5.1 9.3-8.4c.4-.4-.1-.6-.6-.3L5.6 12.3.7 10.8c-1.1-.3-1.1-1.1.2-1.6L20 2c.9-.3 1.7.2 1.5 2.5Z"/></svg></a><a href="https://www.instagram.com/bestimood1?vrfl=MXZlN2IycmU4aGYwaQ==" aria-label="Instagram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle class="icon-dot" cx="17.5" cy="6.8" r="1"/></svg></a></div>
+      <a class="brand" href="#top" aria-label="BESTI MOOD">BESTI<span>MOOD</span><i>♡</i></a>
+      <div class="header-utilities"><a href="#contacts">Контакты</a><button class="profile-button" type="button" aria-label="Личный кабинет" aria-controls="account-modal"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg></button><button class="bag-button" type="button" aria-label="Корзина, товаров: 0" aria-expanded="false" aria-controls="cart-drawer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l1 13H4L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg><span class="cart-count">0</span></button></div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-label="Подборка BESTI">
+      <div class="hero-slide is-active" data-slide="0">
+        <div class="hero-photo photo-editorial"><div class="photo-frame"><span class="editorial-shape shape-coat"></span><span class="editorial-shadow"></span></div><span class="photo-label">BESTI MOOD · 01</span></div>
+        <div class="hero-copy"><p class="eyebrow">Капсула сезона · осень / зима</p><h1>Новая<br>коллекция</h1><p>Вещи, которые легко становятся любимыми.</p><a class="button button-dark" href="#catalog">Смотреть каталог <span>↗</span></a></div>
+      </div>
+      <div class="hero-slide" data-slide="1">
+        <div class="hero-photo photo-soft"><div class="photo-frame"><span class="editorial-shape shape-sweater"></span><span class="editorial-shadow"></span></div><span class="photo-label">BESTI MOOD · 02</span></div>
+        <div class="hero-copy"><p class="eyebrow">Мягкие фактуры</p><h1>Тепло<br>в деталях</h1><p>Трикотаж и верхний слой на каждый день.</p><a class="button button-dark" href="#catalog" data-jump-filter="tops">Выбрать вещи <span>↗</span></a></div>
+      </div>
+      <div class="hero-slide" data-slide="2">
+        <div class="hero-photo photo-sale"><div class="photo-frame"><span class="editorial-shape shape-dress"></span><span class="editorial-shadow"></span></div><span class="photo-label">BESTI MOOD · 03</span></div>
+        <div class="hero-copy"><p class="eyebrow">Избранное BESTI</p><h1>Найди<br>свой образ</h1><p>Соберите комплект из вещей новой капсулы.</p><a class="button button-dark" href="#catalog" data-jump-filter="all">Перейти к каталогу <span>↗</span></a></div>
+      </div>
+      <button class="hero-arrow hero-prev" type="button" aria-label="Предыдущий баннер">←</button>
+      <button class="hero-arrow hero-next" type="button" aria-label="Следующий баннер">→</button>
+      <div class="hero-pagination" aria-label="Выбрать баннер"><button class="is-active" aria-label="Баннер 1"></button><button aria-label="Баннер 2"></button><button aria-label="Баннер 3"></button></div>
+    </section>
+
+    <section class="catalog" id="catalog">
+      <div class="catalog-top"><div><p class="eyebrow">Вещи BESTI MOOD</p><h2>Каталог</h2></div><div class="sort-label"><span>Сортировать</span><div class="sort-control"><button class="sort-trigger" type="button" aria-label="Сортировка товаров" aria-expanded="false" aria-controls="sort-menu"><span>По популярности</span><svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1 5 5 5-5"/></svg></button><div class="sort-menu" id="sort-menu" hidden><button type="button" data-sort="0" class="is-active">По популярности</button><button type="button" data-sort="1">Сначала дешевле</button><button type="button" data-sort="2">Сначала дороже</button></div></div></div></div>
+      <div class="category-controls">
+      <button class="category-trigger" type="button" aria-label="Категории" aria-expanded="true" aria-controls="category-panel"><svg viewBox="0 0 20 16" aria-hidden="true"><path d="M1 2h18M1 8h18M1 14h18"/></svg></button>
+      <div class="category-panel" id="category-panel" aria-label="Категории товаров">
+        <button class="category-close" type="button" aria-label="Закрыть категории">×</button>
+        <button class="category-option is-active" data-filter="all">Все вещи</button>
+        <div class="category-groups" id="category-groups"></div>
+      </div>
+      </div>
+      <div class="catalog-meta"><span id="result-count">10 моделей</span><span>Осень / зима 2026</span></div>
+      <div class="product-grid" id="product-grid"></div>
+      <button class="load-more" type="button">Показать ещё <span>↓</span></button>
+    </section>
+  </main>
+
+  <div class="cart-overlay" hidden></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-label="Корзина" aria-hidden="true" hidden>
+    <div class="cart-heading"><div><p class="eyebrow">Ваш выбор</p><h2>Корзина <span class="cart-heading-count">0</span></h2></div><button class="cart-close" type="button" aria-label="Закрыть корзину">×</button></div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-summary"><div><span>Итого</span><strong id="cart-total">0 ₽</strong></div><div class="checkout-result" id="checkout-result" hidden></div><button class="button button-dark checkout-button" id="checkout-button" type="button" disabled>Оплатить</button><p class="checkout-note" id="checkout-note" hidden>Онлайн-оплата не подключена. После оформления с вами свяжется менеджер.</p></div>
+  </aside>
+
+  <div class="product-modal-overlay" hidden></div>
+  <section class="product-modal" id="product-modal" role="dialog" aria-modal="true" aria-label="Информация о товаре" aria-hidden="true" hidden>
+    <button class="product-modal-close" type="button" aria-label="Закрыть карточку">×</button>
+    <div class="product-modal-content" id="product-modal-content"></div>
+  </section>
+
+  <div class="account-overlay" hidden></div>
+  <section class="account-modal" id="account-modal" role="dialog" aria-modal="true" aria-label="Личный кабинет BESTI MOOD" aria-hidden="true" hidden>
+    <header class="account-heading"><div><p class="eyebrow">BESTI MOOD</p><h2 id="account-title">Личный кабинет</h2></div><button class="account-close" type="button" aria-label="Закрыть личный кабинет">×</button></header>
+    <div class="auth-view" id="auth-choice">
+      <p class="auth-intro">Войдите в аккаунт или создайте новый, чтобы видеть свои заказы и данные.</p>
+      <div class="auth-choice-buttons"><button class="button button-dark" type="button" data-auth-action="login">Войти</button><button class="button auth-register" type="button" data-auth-action="register">Зарегистрироваться</button></div>
+    </div>
+    <div class="auth-view" id="auth-login" hidden>
+      <button class="auth-back" type="button" data-auth-action="back">← Назад</button>
+      <p class="auth-intro">Введите почту и пароль от аккаунта.</p>
+      <form class="account-form auth-form" id="login-form"><label class="account-field-wide">Электронная почта<input name="email" type="email" autocomplete="email" placeholder="name@mail.ru" required></label><label class="account-field-wide">Пароль<input name="password" type="password" autocomplete="current-password" required></label><label class="account-consent account-field-wide"><input type="checkbox" name="rememberMe"><span>Оставаться в аккаунте на этом устройстве</span></label><p class="auth-error account-field-wide" id="login-error" aria-live="polite"></p><button class="button button-dark account-save" type="submit">Войти</button></form>
+    </div>
+    <div class="auth-view" id="auth-register" hidden>
+      <button class="auth-back" type="button" data-auth-action="back">← Назад</button>
+      <p class="auth-intro">Заполните данные для создания аккаунта.</p>
+      <form class="account-form auth-form" id="register-form">
+        <label>Фамилия<input name="lastName" autocomplete="family-name" required></label>
+        <label>Имя<input name="firstName" autocomplete="given-name" required></label>
+        <label>Электронная почта<input name="email" type="email" autocomplete="email" required></label>
+        <label class="account-field-wide">Пароль<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label>Номер телефона<input name="phone" type="tel" autocomplete="tel" required></label>
+        <label class="account-field-wide">Ник в Telegram<input name="telegram" autocomplete="off" placeholder="@username"></label>
+        <p class="auth-help account-field-wide">Пароль должен содержать не менее 8 символов. Telegram-ник сохранится в профиле, чтобы менеджер мог связаться с вами.</p>
+        <label class="account-consent account-field-wide"><input type="checkbox" name="personalDataConsent" required><span>Согласен(на) на обработку персональных данных</span></label>
+        <p class="auth-legal-note account-field-wide">Текст согласия будет добавлен после подготовки документа.</p>
+        <label class="account-consent account-field-wide"><input type="checkbox" name="rememberMe"><span>Оставаться в аккаунте на этом устройстве</span></label>
+        <p class="auth-error account-field-wide" id="register-error" aria-live="polite"></p>
+        <button class="button button-dark account-save" type="submit">Продолжить</button>
+      </form>
+    </div>
+    <div class="auth-view" id="auth-verify" hidden>
+      <button class="auth-back" type="button" data-auth-action="back">← Назад</button>
+      <p class="auth-intro" id="verify-intro">Введите код подтверждения.</p>
+      <form class="account-form auth-form" id="verify-form"><label class="account-field-wide">Код из письма<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required></label><p class="auth-help account-field-wide">Если письма нет, проверьте папку «Спам».</p><p class="auth-error account-field-wide" id="verify-error" aria-live="polite"></p><button class="button button-dark account-save" type="submit">Подтвердить</button></form>
+    </div>
+    <div class="account-content" id="account-content" hidden>
+      <nav class="account-tabs" role="tablist" aria-label="Разделы личного кабинета"><button class="account-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="account-orders" data-account-tab="orders">Мои заказы</button><button class="account-tab" type="button" role="tab" aria-selected="false" aria-controls="account-profile" data-account-tab="profile">Личные данные</button></nav>
+      <div class="account-panel" id="account-orders" role="tabpanel"><div id="account-orders-content"></div></div>
+      <div class="account-panel" id="account-profile" role="tabpanel" hidden><form class="account-form" id="account-form">
+        <label>Фамилия<input name="lastName" autocomplete="family-name" required></label><label>Имя<input name="firstName" autocomplete="given-name" required></label>
+        <label>Электронная почта<input name="email" type="email" autocomplete="email" readonly required></label><label>Номер телефона<input name="phone" type="tel" autocomplete="tel" required></label>
+        <label>Ник в Telegram<input name="telegram" autocomplete="off" placeholder="@username"></label><label>Дата рождения<input name="birthDate" type="date" autocomplete="bday"></label>
+        <label class="account-field-wide">Номер покупателя<input name="customerNumber" readonly placeholder="Присвоится при регистрации"></label>
+        <label class="account-field-wide">Адрес ПВЗ<input name="pickupPoint" autocomplete="street-address" placeholder="Город, адрес или название пункта выдачи"></label>
+        <p class="account-save-note" id="account-save-note" aria-live="polite"></p><button class="button button-dark account-save" type="submit">Сохранить данные</button>
+      </form><button class="auth-logout" type="button" data-auth-action="logout">Выйти из аккаунта</button></div>
+    </div>
+  </section>
+
+  <footer id="contacts" class="footer"><a class="brand footer-brand" href="#top">BESTI<span>MOOD</span><i>♡</i></a><span>Москва · одежда из настоящих тканей</span><div><a href="delivery.html">Доставка и возврат</a><a href="https://t.me/bestimood" target="_blank" rel="noopener">Telegram</a><a href="https://www.instagram.com/bestimood1?vrfl=MXZlN2IycmU4aGYwaQ==" target="_blank" rel="noopener">Instagram</a></div><small>© 2026 BESTI MOOD</small></footer>
+  <script src="products-data.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
