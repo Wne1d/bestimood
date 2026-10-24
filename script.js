@@ -80,6 +80,17 @@ function openCart(){cartDrawer.hidden=false;cartOverlay.hidden=false;cartDrawer.
 function closeCart(){cartDrawer.hidden=true;cartOverlay.hidden=true;cartDrawer.setAttribute('aria-hidden','true');cartTrigger.setAttribute('aria-expanded','false');document.body.classList.remove('cart-open')}
 async function finishCheckout(){
   if(!cartItems.size||!BestiCloud.isSignedIn())return false;
+  try{cloudProfile=await BestiCloud.getProfile()}catch(error){checkoutError=`Не удалось проверить адрес ПВЗ: ${error.message}`;renderCart();return false}
+  const pickupPoint=String(cloudProfile?.pickup_point||'').trim();
+  if(!pickupPoint){
+    checkoutPending=true;
+    if(accountModal.hidden)openAccount();
+    setAccountTab('profile');
+    accountSaveNote.textContent='Укажите адрес ПВЗ, чтобы продолжить оформление заказа.';
+    const pickupField=accountForm.elements.namedItem('pickupPoint');
+    pickupField?.focus();
+    return false;
+  }
   const entries=[...cartItems.values()];
   const items=entries.map(entry=>({sku:entry.product.sku,name:displayName(entry.product.name),size:entry.size,quantity:entry.quantity,price:entry.product.price!==null&&entry.product.price!==''&&Number.isFinite(Number(entry.product.price))?Number(entry.product.price):null}));
   let order;
@@ -381,7 +392,20 @@ accountForm.addEventListener('input',()=>{accountSaveNote.textContent='';});
 accountForm.addEventListener('submit',async event=>{
   event.preventDefault();
   const data=Object.fromEntries(new FormData(accountForm).entries());
-  try{cloudProfile=await BestiCloud.saveProfile(data);accountSaveNote.textContent='Данные сохранены в аккаунте.';await refreshAccountData()}
+  try{
+    cloudProfile=await BestiCloud.saveProfile(data);
+    accountSaveNote.textContent='Данные сохранены в аккаунте.';
+    await refreshAccountData();
+    if(checkoutPending){
+      if(!String(cloudProfile?.pickup_point||'').trim()){
+        accountSaveNote.textContent='Укажите адрес ПВЗ, чтобы продолжить оформление заказа.';
+        accountForm.elements.namedItem('pickupPoint')?.focus();
+        return;
+      }
+      const placed=await finishCheckout();
+      if(placed){checkoutPending=false;closeAccount();openCart()}
+    }
+  }
   catch(problem){accountSaveNote.textContent=problem.message||'Не удалось сохранить данные.'}
 });
 accountOrdersContent.addEventListener('click',event=>{if(event.target.closest('.account-catalog-link')){closeAccount();document.querySelector('#catalog').scrollIntoView({behavior:'smooth'})}});
