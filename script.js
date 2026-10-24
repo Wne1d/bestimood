@@ -165,7 +165,7 @@ function closeProductModal(){productModal.hidden=true;productModalOverlay.hidden
 let pendingAuth=null;
 let authPreviousView='auth-choice';
 let cloudProfile=null;
-function showAuthView(view){document.querySelectorAll('.auth-view').forEach(node=>{node.hidden=node.id!==view});document.querySelector('#account-content').hidden=view!=='account-content';const titles={'auth-choice':'Личный кабинет','auth-login':'Войти','auth-register':'Регистрация','auth-verify':'Подтверждение','account-content':'Личный кабинет'};document.querySelector('#account-title').textContent=titles[view]||'Личный кабинет'}
+function showAuthView(view){document.querySelectorAll('.auth-view').forEach(node=>{node.hidden=node.id!==view});document.querySelector('#account-content').hidden=view!=='account-content';const titles={'auth-choice':'Личный кабинет','auth-login':'Войти','auth-register':'Регистрация','auth-profile-setup':'Завершение регистрации','auth-verify':'Подтверждение','account-content':'Личный кабинет'};document.querySelector('#account-title').textContent=titles[view]||'Личный кабинет'}
 function setAccountTab(tab){
   document.querySelectorAll('.account-tab').forEach(button=>{const active=button.dataset.accountTab===tab;button.classList.toggle('is-active',active);button.setAttribute('aria-selected',String(active))});
   document.querySelectorAll('.account-panel').forEach(panel=>{panel.hidden=panel.id!==`account-${tab}`});
@@ -185,11 +185,20 @@ async function renderAccountOrders(){
 async function refreshAccountData(){
   try{
     cloudProfile=await BestiCloud.getProfile();
-    if(!cloudProfile){showAuthView('auth-choice');return}
+    if(!cloudProfile){showProfileSetup();return}
     const values={firstName:cloudProfile.first_name,lastName:cloudProfile.last_name,email:cloudProfile.email,phone:cloudProfile.phone,telegram:cloudProfile.telegram,birthDate:cloudProfile.birth_date,customerNumber:cloudProfile.customer_number,pickupPoint:cloudProfile.pickup_point};
     for(const [name,value] of Object.entries(values)){const field=accountForm.elements.namedItem(name);if(field)field.value=value||''}
     await renderAccountOrders();
   }catch(error){accountOrdersContent.innerHTML=`<p class="auth-error">Не удалось загрузить данные: ${escapeHTML(error.message)}</p>`}
+}
+function showProfileSetup(){
+  const metadata=BestiCloud.currentUser()?.user_metadata||{};
+  const form=document.querySelector('#profile-setup-form');
+  for(const [name,value] of Object.entries({lastName:metadata.last_name,firstName:metadata.first_name,phone:metadata.phone,telegram:metadata.telegram})){
+    const field=form.elements.namedItem(name);if(field&&!field.value)field.value=value||'';
+  }
+  document.querySelector('#profile-setup-error').textContent='';
+  showAuthView('auth-profile-setup');
 }
 function openAccount(){
   closeCart();closeProductModal();
@@ -332,10 +341,23 @@ loginForm.addEventListener('submit',async event=>{
     const email=data.email.trim().toLowerCase();
     await BestiCloud.signIn(email,data.password,data.rememberMe==='on');
     cloudProfile=await BestiCloud.getProfile();
-    if(!cloudProfile)throw new Error('Профиль не найден. Обратитесь к менеджеру или зарегистрируйтесь заново.');
+    if(!cloudProfile){showProfileSetup();return}
     setAccountTab('orders');showAuthView('account-content');await refreshAccountData();
     if(checkoutPending){checkoutPending=false;const placed=await finishCheckout();if(placed){closeAccount();openCart()}else{error.textContent=checkoutError||'Не удалось сохранить заказ. Проверьте данные профиля и повторите попытку.'}}
   }catch(problem){error.textContent=problem.message||'Не удалось войти. Проверьте почту и пароль.'}
+});
+document.querySelector('#profile-setup-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const form=event.currentTarget;const data=Object.fromEntries(new FormData(form).entries());
+  const error=document.querySelector('#profile-setup-error');const button=form.querySelector('[type="submit"]');
+  if(data.personalDataConsent!=='on'){error.textContent='Для сохранения профиля нужно согласие на обработку персональных данных.';return}
+  button.disabled=true;delete data.personalDataConsent;
+  try{
+    cloudProfile=await BestiCloud.saveProfile(data,true);
+    setAccountTab('orders');showAuthView('account-content');await refreshAccountData();
+    if(checkoutPending){checkoutPending=false;const placed=await finishCheckout();if(placed){closeAccount();openCart()}else{error.textContent=checkoutError||'Не удалось сохранить заказ. Повторите попытку.'}}
+  }catch(problem){error.textContent=problem.message||'Не удалось сохранить профиль.'}
+  finally{button.disabled=false}
 });
 verifyForm.addEventListener('submit',async event=>{
   event.preventDefault();

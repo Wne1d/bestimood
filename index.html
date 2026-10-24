@@ -97,6 +97,19 @@
         <button class="button button-dark account-save" type="submit">Продолжить</button>
       </form>
     </div>
+    <div class="auth-view" id="auth-profile-setup" hidden>
+      <p class="auth-intro">Аккаунт найден, но профиль ещё не сохранён. Проверьте данные, чтобы продолжить.</p>
+      <form class="account-form auth-form" id="profile-setup-form">
+        <label>Фамилия<input name="lastName" autocomplete="family-name" required></label>
+        <label>Имя<input name="firstName" autocomplete="given-name" required></label>
+        <label class="account-field-wide">Номер телефона<input name="phone" type="tel" autocomplete="tel" required></label>
+        <label class="account-field-wide">Ник в Telegram<input name="telegram" autocomplete="off" placeholder="@username"></label>
+        <label class="account-consent account-field-wide"><input type="checkbox" name="personalDataConsent" required><span>Согласен(на) на обработку персональных данных</span></label>
+        <p class="auth-legal-note account-field-wide">Текст согласия будет добавлен после подготовки документа.</p>
+        <p class="auth-error account-field-wide" id="profile-setup-error" aria-live="polite"></p>
+        <button class="button button-dark account-save" type="submit">Сохранить профиль</button>
+      </form>
+    </div>
     <div class="auth-view" id="auth-verify" hidden>
       <button class="auth-back" type="button" data-auth-action="back">← Назад</button>
       <p class="auth-intro" id="verify-intro">Введите код подтверждения.</p>
