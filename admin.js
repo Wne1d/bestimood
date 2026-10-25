@@ -50,7 +50,7 @@ function renderProducts(){
   const filtered=allProducts.filter(product=>!query||`${product.sku} ${product.name}`.toLowerCase().includes(query));
   productRows.innerHTML=filtered.map(product=>{
     const image=product.image||product.images?.[0]||'';
-    return `<tr class="product-row"><td>${image?`<img class="product-thumb" src="${esc(image)}" alt="">`:'—'}</td><td><strong>${esc(product.sku)}</strong><br>${esc(product.name)}</td><td>${product.price==null?'—':formatMoney(product.price)}</td><td>${esc(productStock(product))}</td><td>${product.is_active?'В каталоге':'Скрыт'}</td><td><button type="button" data-product-edit="${esc(product.sku)}">Изменить</button>${product.is_active?` <button class="archive-product" type="button" data-product-hide="${esc(product.sku)}">Скрыть</button>`:''}</td></tr>`;
+    return `<tr class="product-row"><td>${image?`<img class="product-thumb" src="${esc(image)}" alt="">`:'—'}</td><td><strong>${esc(product.sku)}</strong><br>${esc(product.name)}</td><td>${product.price==null?'—':formatMoney(product.price)}</td><td>${esc(productStock(product))}</td><td>${product.is_active?'В каталоге':'Скрыт'}</td><td><button type="button" data-product-edit="${esc(product.sku)}">Изменить</button>${product.is_active?` <button class="archive-product" type="button" data-product-hide="${esc(product.sku)}">Скрыть</button>`:''} <button class="delete-product" type="button" data-product-delete="${esc(product.sku)}">Удалить</button></td></tr>`;
   }).join('');
   productEmpty.hidden=filtered.length>0;
 }
@@ -94,6 +94,16 @@ productRows.addEventListener('click',async event=>{
   if(edit){const product=allProducts.find(item=>item.sku===edit.dataset.productEdit);if(product)openProductForm(product);return}
   const hide=event.target.closest('[data-product-hide]');
   if(hide){hide.disabled=true;try{await BestiCloud.archiveProduct(hide.dataset.productHide);await loadProducts()}catch(error){document.querySelector('#product-list-error').textContent=error.message;hide.disabled=false}}
+  const remove=event.target.closest('[data-product-delete]');
+  if(remove){
+    const sku=remove.dataset.productDelete;
+    const product=allProducts.find(item=>item.sku===sku);
+    if(!product)return;
+    if(!window.confirm(`Удалить товар «${product.name}» (${sku}) без возможности восстановления?`))return;
+    remove.disabled=true;
+    try{await BestiCloud.deleteProduct(sku);await loadProducts()}
+    catch(error){document.querySelector('#product-list-error').textContent=`Не удалось удалить товар: ${error.message}`;remove.disabled=false}
+  }
 });
 productForm.addEventListener('submit',async event=>{
   event.preventDefault();

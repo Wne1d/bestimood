@@ -213,6 +213,11 @@ window.BestiCloud = (() => {
       method: 'PATCH', body: {is_active: false}, headers: {Prefer: 'return=representation'}
     });
   }
+  async function deleteProduct(sku) {
+    return request(`/rest/v1/catalog_products?sku=eq.${encodeURIComponent(sku)}`, {
+      method: 'DELETE', headers: {Prefer: 'return=representation'}
+    });
+  }
   async function signOut() {
     try { if (session?.access_token) await request('/auth/v1/logout', {method: 'POST', body: {}}); }
     finally { saveSession(null); }
@@ -220,5 +225,5 @@ window.BestiCloud = (() => {
   function currentUser() { return session?.user || null; }
   function isSignedIn() { return Boolean(session?.access_token && session?.user?.id); }
 
-  return {sendCode, verifyCode, signUp, signIn, getProfile, saveProfile, createOrder, getOrders, getProducts, saveProduct, uploadProductImages, archiveProduct, signOut, currentUser, isSignedIn};
+  return {sendCode, verifyCode, signUp, signIn, getProfile, saveProfile, createOrder, getOrders, getProducts, saveProduct, uploadProductImages, archiveProduct, deleteProduct, signOut, currentUser, isSignedIn};
 })();
