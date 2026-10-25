@@ -188,7 +188,7 @@ function closeProductModal(){productModal.hidden=true;productModalOverlay.hidden
 let pendingAuth=null;
 let authPreviousView='auth-choice';
 let cloudProfile=null;
-function showAuthView(view){document.querySelectorAll('.auth-view').forEach(node=>{node.hidden=node.id!==view});document.querySelector('#account-content').hidden=view!=='account-content';const titles={'auth-choice':'Личный кабинет','auth-login':'Войти','auth-register':'Регистрация','auth-profile-setup':'Завершение регистрации','auth-verify':'Подтверждение','account-content':'Личный кабинет'};document.querySelector('#account-title').textContent=titles[view]||'Личный кабинет'}
+function showAuthView(view){document.querySelectorAll('.auth-view').forEach(node=>{node.hidden=node.id!==view});document.querySelector('#account-content').hidden=view!=='account-content';const adminEntry=document.querySelector('#account-admin-entry');if(adminEntry)adminEntry.hidden=BestiCloud.currentUser()?.app_metadata?.role!=='admin';const titles={'auth-choice':'Личный кабинет','auth-login':'Войти','auth-register':'Регистрация','auth-profile-setup':'Завершение регистрации','auth-verify':'Подтверждение','account-content':'Личный кабинет'};document.querySelector('#account-title').textContent=titles[view]||'Личный кабинет'}
 function setAccountTab(tab){
   document.querySelectorAll('.account-tab').forEach(button=>{const active=button.dataset.accountTab===tab;button.classList.toggle('is-active',active);button.setAttribute('aria-selected',String(active))});
   document.querySelectorAll('.account-panel').forEach(panel=>{panel.hidden=panel.id!==`account-${tab}`});
